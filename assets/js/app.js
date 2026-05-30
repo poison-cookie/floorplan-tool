@@ -718,8 +718,18 @@
     });
   }
 
+  const filenameSaveTimers = new WeakMap();
   const resultGrid = document.querySelector('.result-grid[data-batch-id]');
   if (resultGrid) {
+    resultGrid.addEventListener('input', function (event) {
+      const input = event.target.closest('[data-filename-autosave]');
+      if (!input) {
+        return;
+      }
+
+      scheduleFilenameSave(resultGrid, input);
+    });
+
     resultGrid.addEventListener('click', function (event) {
       const deleteButton = event.target.closest('[data-delete-image]');
       if (deleteButton) {
@@ -778,6 +788,82 @@
     return candidate;
   }
 
+  function scheduleFilenameSave(resultGrid, input) {
+    const card = input.closest('.result-card[data-image-id]');
+    if (!card) {
+      return;
+    }
+
+    const sanitized = sanitizeFilename(input.value);
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    const existingTimer = filenameSaveTimers.get(input);
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+    }
+
+    const status = card.querySelector('[data-filename-save-status]');
+    if (sanitized === '') {
+      setFilenameSaveStatus(status, 'ファイル名を入力すると保存されます。', false);
+      return;
+    }
+
+    setFilenameSaveStatus(status, '保存待ち...', false);
+    filenameSaveTimers.set(input, window.setTimeout(function () {
+      saveResultFilename(resultGrid, card, input);
+    }, 500));
+  }
+
+  async function saveResultFilename(resultGrid, card, input) {
+    const status = card.querySelector('[data-filename-save-status]');
+    const filename = sanitizeFilename(input.value);
+    if (!filename) {
+      setFilenameSaveStatus(status, 'ファイル名を入力すると保存されます。', false);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('csrf_token', resultGrid.dataset.csrfToken || '');
+    formData.append('batch_id', resultGrid.dataset.batchId || '');
+    formData.append('image_id', card.dataset.imageId || '');
+    formData.append('filename', filename);
+
+    setFilenameSaveStatus(status, '保存中...', false);
+
+    try {
+      const response = await fetch('update_filename.php', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'ファイル名を保存できませんでした。');
+      }
+
+      if (sanitizeFilename(input.value) !== filename) {
+        return;
+      }
+
+      input.value = data.filename || filename;
+      setFilenameSaveStatus(status, '保存済み', false);
+    } catch (error) {
+      setFilenameSaveStatus(status, error.message || 'ファイル名を保存できませんでした。', true);
+    }
+  }
+
+  function setFilenameSaveStatus(status, message, isError) {
+    if (!status) {
+      return;
+    }
+
+    status.textContent = message;
+    status.classList.toggle('is-error', Boolean(isError));
+  }
+
   async function deleteResultItem(resultGrid, card) {
     if (!window.confirm('この画像を削除しますか？')) {
       return;
@@ -823,7 +909,9 @@
 
   async function adjustPosition(resultGrid, card, action) {
     const buttons = Array.from(card.querySelectorAll('[data-position-action]'));
-    const status = card.querySelector('.position-status');
+    const positionStatus = card.querySelector('.position-status');
+    const transformStatus = card.querySelector('.transform-status');
+    const activeStatus = isTransformAction(action) ? transformStatus : positionStatus;
     const formData = new FormData();
 
     formData.append('csrf_token', resultGrid.dataset.csrfToken || '');
@@ -834,7 +922,7 @@
     buttons.forEach(function (button) {
       button.disabled = true;
     });
-    setPositionStatusText(status, '更新中...');
+    setStatusText(activeStatus, '更新中...');
 
     try {
       const response = await fetch('adjust_position.php', {
@@ -859,14 +947,29 @@
 
       card.dataset.offsetX = String(data.offset_x || 0);
       card.dataset.offsetY = String(data.offset_y || 0);
-      renderPositionStatus(status, Number(data.offset_x || 0), Number(data.offset_y || 0));
+      card.dataset.scalePercent = String(data.scale_percent || 100);
+      card.dataset.rotationDegrees = String(data.rotation_degrees || 0);
+      card.dataset.flipHorizontal = data.flip_horizontal ? '1' : '0';
+      card.dataset.flipVertical = data.flip_vertical ? '1' : '0';
+      renderPositionStatus(positionStatus, Number(data.offset_x || 0), Number(data.offset_y || 0));
+      renderTransformStatus(
+        transformStatus,
+        Number(data.scale_percent || 100),
+        Number(data.rotation_degrees || 0),
+        Boolean(data.flip_horizontal),
+        Boolean(data.flip_vertical)
+      );
     } catch (error) {
-      setPositionStatusText(status, error.message || '位置を更新できませんでした。');
+      setStatusText(activeStatus, error.message || '画像を更新できませんでした。');
     } finally {
       buttons.forEach(function (button) {
         button.disabled = false;
       });
     }
+  }
+
+  function isTransformAction(action) {
+    return ['zoom_in', 'zoom_out', 'rotate_left', 'rotate_right', 'flip_horizontal', 'flip_vertical'].includes(action);
   }
 
   function updateResultCounts(successCount, totalCount, errorCount) {
@@ -923,6 +1026,23 @@
     );
   }
 
+  function renderTransformStatus(status, scalePercent, rotationDegrees, flipHorizontal, flipVertical) {
+    if (!status) {
+      return;
+    }
+
+    status.replaceChildren(
+      document.createTextNode('拡大率: '),
+      createOffsetSpan('scale-percent', String(scalePercent)),
+      document.createTextNode('% / 回転: '),
+      createOffsetSpan('rotation-degrees', String(rotationDegrees)),
+      document.createTextNode('° / 左右反転: '),
+      createOffsetSpan('flip-horizontal', flipHorizontal ? 'ON' : 'OFF'),
+      document.createTextNode(' / 上下反転: '),
+      createOffsetSpan('flip-vertical', flipVertical ? 'ON' : 'OFF')
+    );
+  }
+
   function createOffsetSpan(name, value) {
     const span = document.createElement('span');
     span.setAttribute('data-' + name, '');
@@ -930,7 +1050,7 @@
     return span;
   }
 
-  function setPositionStatusText(status, message) {
+  function setStatusText(status, message) {
     if (status) {
       status.textContent = message;
     }

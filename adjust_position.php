@@ -17,12 +17,13 @@ $batchId = (string) ($_POST['batch_id'] ?? '');
 $imageId = (string) ($_POST['image_id'] ?? '');
 $action = (string) ($_POST['action'] ?? '');
 $step = 10;
+$scaleStep = 10;
 
 if (!isValidBatchId($batchId) || !isValidImageId($imageId)) {
     respondJson(['success' => false, 'message' => '指定された画像を確認できません。'], 400);
 }
 
-if (!in_array($action, ['up', 'down', 'left', 'right', 'reset'], true)) {
+if (!in_array($action, ['up', 'down', 'left', 'right', 'reset', 'zoom_in', 'zoom_out', 'rotate_left', 'rotate_right', 'flip_horizontal', 'flip_vertical'], true)) {
     respondJson(['success' => false, 'message' => '位置調整の指定が不正です。'], 400);
 }
 
@@ -56,6 +57,10 @@ if ($originalPath === null || $processedPath === null || !is_file($originalPath)
 
 $offsetX = (int) ($item['position_offset_x'] ?? 0);
 $offsetY = (int) ($item['position_offset_y'] ?? 0);
+$scalePercent = clampInt((int) ($item['transform_scale_percent'] ?? 100), 20, 300);
+$rotationDegrees = normalizeRotationDegrees((int) ($item['rotation_degrees'] ?? 0));
+$flipHorizontal = (bool) ($item['flip_horizontal'] ?? false);
+$flipVertical = (bool) ($item['flip_vertical'] ?? false);
 
 switch ($action) {
     case 'left':
@@ -74,11 +79,40 @@ switch ($action) {
         $offsetX = 0;
         $offsetY = 0;
         break;
+    case 'zoom_in':
+        $scalePercent = clampInt($scalePercent + $scaleStep, 20, 300);
+        break;
+    case 'zoom_out':
+        $scalePercent = clampInt($scalePercent - $scaleStep, 20, 300);
+        break;
+    case 'rotate_left':
+        $rotationDegrees = normalizeRotationDegrees($rotationDegrees - 90);
+        break;
+    case 'rotate_right':
+        $rotationDegrees = normalizeRotationDegrees($rotationDegrees + 90);
+        break;
+    case 'flip_horizontal':
+        $flipHorizontal = !$flipHorizontal;
+        break;
+    case 'flip_vertical':
+        $flipVertical = !$flipVertical;
+        break;
 }
 
 $inputExtension = strtolower(pathinfo($originalPath, PATHINFO_EXTENSION));
 $outputFormat = normalizeOutputFormat($metadata['output_format'] ?? DEFAULT_OUTPUT_FORMAT);
-$processResult = processImageToSquare($originalPath, $processedPath, $inputExtension, $outputFormat, $offsetX, $offsetY);
+$processResult = processImageToSquare(
+    $originalPath,
+    $processedPath,
+    $inputExtension,
+    $outputFormat,
+    $offsetX,
+    $offsetY,
+    $scalePercent,
+    $rotationDegrees,
+    $flipHorizontal,
+    $flipVertical
+);
 
 if (!$processResult['success']) {
     $message = is_string($processResult['error']) && isset(ERROR_MESSAGES[$processResult['error']])
@@ -91,6 +125,10 @@ $metadata['items'][$itemIndex]['resized_width'] = $processResult['resized_width'
 $metadata['items'][$itemIndex]['resized_height'] = $processResult['resized_height'];
 $metadata['items'][$itemIndex]['position_offset_x'] = $processResult['offset_x'];
 $metadata['items'][$itemIndex]['position_offset_y'] = $processResult['offset_y'];
+$metadata['items'][$itemIndex]['transform_scale_percent'] = $processResult['scale_percent'];
+$metadata['items'][$itemIndex]['rotation_degrees'] = $processResult['rotation_degrees'];
+$metadata['items'][$itemIndex]['flip_horizontal'] = $processResult['flip_horizontal'];
+$metadata['items'][$itemIndex]['flip_vertical'] = $processResult['flip_vertical'];
 
 if (!saveMetadata($batchId, $metadata)) {
     respondJson(['success' => false, 'message' => getErrorMessage('E_SAVE_FAILED')], 500);
@@ -101,6 +139,10 @@ respondJson([
     'image_url' => (string) $metadata['items'][$itemIndex]['processed_path'] . '?v=' . bin2hex(random_bytes(4)),
     'offset_x' => $processResult['offset_x'],
     'offset_y' => $processResult['offset_y'],
+    'scale_percent' => $processResult['scale_percent'],
+    'rotation_degrees' => $processResult['rotation_degrees'],
+    'flip_horizontal' => $processResult['flip_horizontal'],
+    'flip_vertical' => $processResult['flip_vertical'],
     'resized_width' => $processResult['resized_width'],
     'resized_height' => $processResult['resized_height'],
 ]);

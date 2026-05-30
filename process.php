@@ -34,6 +34,9 @@ if (!is_array($postedFilenames)) {
 }
 $appendBatchId = (string) ($_POST['append_batch_id'] ?? '');
 $appendMetadata = isValidBatchId($appendBatchId) ? loadMetadata($appendBatchId) : null;
+if ($appendMetadata !== null) {
+    $outputFormat = normalizeOutputFormat($appendMetadata['output_format'] ?? DEFAULT_OUTPUT_FORMAT);
+}
 
 if (count($files) === 0) {
     redirectToIndexWithErrors([getErrorMessage('E_NO_FILE')]);
@@ -98,6 +101,10 @@ foreach ($files as $index => $file) {
         'resized_height' => null,
         'position_offset_x' => 0,
         'position_offset_y' => 0,
+        'transform_scale_percent' => 100,
+        'rotation_degrees' => 0,
+        'flip_horizontal' => false,
+        'flip_vertical' => false,
         'status' => 'error',
         'error' => null,
         'error_message' => null,
@@ -143,6 +150,10 @@ foreach ($files as $index => $file) {
     $item['resized_height'] = $processResult['resized_height'];
     $item['position_offset_x'] = $processResult['offset_x'];
     $item['position_offset_y'] = $processResult['offset_y'];
+    $item['transform_scale_percent'] = $processResult['scale_percent'];
+    $item['rotation_degrees'] = $processResult['rotation_degrees'];
+    $item['flip_horizontal'] = $processResult['flip_horizontal'];
+    $item['flip_vertical'] = $processResult['flip_vertical'];
     $item['status'] = 'success';
     $metadata['items'][] = $item;
 }

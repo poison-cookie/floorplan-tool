@@ -15,18 +15,28 @@ try {
 $csrfToken = generateCsrfToken();
 $errors = $_SESSION['flash_errors'] ?? [];
 unset($_SESSION['flash_errors']);
+$messages = $_SESSION['flash_messages'] ?? [];
+unset($_SESSION['flash_messages']);
 
 $appendBatchId = (string) ($_GET['batch'] ?? '');
 $appendMetadata = isValidBatchId($appendBatchId) ? loadMetadata($appendBatchId) : null;
 if ($appendMetadata === null) {
     $appendBatchId = '';
 }
+$isAppendMode = $appendBatchId !== '';
 $selectedOutputFormat = normalizeOutputFormat($appendMetadata['output_format'] ?? DEFAULT_OUTPUT_FORMAT);
 $cssVersion = (string) (@filemtime(__DIR__ . '/assets/css/style.css') ?: time());
 $jsVersion = (string) (@filemtime(__DIR__ . '/assets/js/app.js') ?: time());
+$savedBatches = [];
 
 if ($directoryError !== null) {
     $errors[] = $directoryError;
+} else {
+    try {
+        $savedBatches = listSavedBatches();
+    } catch (RuntimeException $exception) {
+        $errors[] = $exception->getMessage();
+    }
 }
 ?>
 <!doctype html>
@@ -46,9 +56,10 @@ if ($directoryError !== null) {
                 アップロードした間取り図画像を、縦横比を維持したまま長辺500pxにリサイズし、500px × 500pxの画像として出力します。
                 縦長・横長画像の場合は、短辺側に白い余白を付けて中央配置します。
             </p>
-            <?php if ($appendBatchId !== ''): ?>
+            <?php if ($isAppendMode): ?>
                 <div class="actions">
                     <a class="button button-secondary" href="result.php?batch=<?= h(rawurlencode($appendBatchId)) ?>">加工結果確認へ戻る</a>
+                    <a class="button button-secondary" href="index.php">新しいバッチに切り替える</a>
                 </div>
             <?php endif; ?>
         </header>
@@ -64,11 +75,64 @@ if ($directoryError !== null) {
             </section>
         <?php endif; ?>
 
+        <?php if (!empty($messages)): ?>
+            <section class="success-box" role="status">
+                <ul>
+                    <?php foreach ($messages as $message): ?>
+                        <li><?= h($message) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+        <?php endif; ?>
+
+        <section class="saved-batches" aria-labelledby="saved-batches-title">
+            <div class="section-heading-row">
+                <h2 id="saved-batches-title">保存済みバッチ</h2>
+            </div>
+
+            <?php if (empty($savedBatches)): ?>
+                <p class="helper-text">保存済みの加工結果はまだありません。</p>
+            <?php else: ?>
+                <ul class="saved-batch-list">
+                    <?php foreach ($savedBatches as $savedBatch): ?>
+                        <?php $isSelectedSavedBatch = $isAppendMode && (string) $savedBatch['batch_id'] === $appendBatchId; ?>
+                        <li class="saved-batch-item">
+                            <div class="saved-batch-main">
+                                <div class="saved-batch-title">
+                                    <strong><?= h((string) $savedBatch['saved_name']) ?></strong>
+                                    <?php if ($isSelectedSavedBatch): ?>
+                                        <span class="current-batch-badge">選択中</span>
+                                    <?php endif; ?>
+                                </div>
+                                <span>
+                                    <?= h(strtoupper((string) $savedBatch['output_format'])) ?> /
+                                    <?= h((string) $savedBatch['success_count']) ?> / <?= h((string) $savedBatch['total_count']) ?>枚 /
+                                    更新: <?= h((string) $savedBatch['updated_at']) ?>
+                                </span>
+                                <code><?= h((string) $savedBatch['batch_id']) ?></code>
+                            </div>
+                            <div class="saved-batch-actions">
+                                <a class="button button-secondary button-small" href="result.php?batch=<?= h(rawurlencode((string) $savedBatch['batch_id'])) ?>">再編集</a>
+                                <form class="inline-form" action="delete_saved_batch.php" method="post" onsubmit="return confirm('保存済みバッチと画像ファイルを削除します。よろしいですか？');">
+                                    <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
+                                    <input type="hidden" name="batch_id" value="<?= h((string) $savedBatch['batch_id']) ?>">
+                                    <button class="button button-danger button-small" type="submit">削除</button>
+                                </form>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </section>
+
         <section class="upload-box" aria-labelledby="upload-title">
             <h2 id="upload-title">画像をアップロード</h2>
             <form id="upload-form" action="process.php" method="post" enctype="multipart/form-data" novalidate>
                 <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                 <input type="hidden" name="append_batch_id" value="<?= h($appendBatchId) ?>">
+                <?php if ($isAppendMode): ?>
+                    <input type="hidden" name="output_format" value="<?= h($selectedOutputFormat) ?>">
+                <?php endif; ?>
                 <input type="hidden" name="MAX_FILE_SIZE" value="<?= h((string) MAX_FILE_SIZE) ?>">
 
                 <div class="form-group">
@@ -91,17 +155,22 @@ if ($directoryError !== null) {
 
                 <fieldset class="form-group">
                     <legend>出力形式</legend>
-                    <div class="radio-row" role="radiogroup" aria-label="出力形式">
+                    <?php if ($isAppendMode): ?>
+                        <p class="fixed-format-note">
+                            この加工結果に追加中です。出力形式は <?= h(strtoupper($selectedOutputFormat)) ?> に固定されます。
+                        </p>
+                    <?php endif; ?>
+                    <div class="radio-row<?= $isAppendMode ? ' radio-row-disabled' : '' ?>" role="radiogroup" aria-label="出力形式">
                         <label>
-                            <input type="radio" name="output_format" value="png" <?= $selectedOutputFormat === 'png' ? 'checked' : '' ?>>
+                            <input type="radio" name="output_format" value="png" <?= $selectedOutputFormat === 'png' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>>
                             PNG
                         </label>
                         <label>
-                            <input type="radio" name="output_format" value="jpg" <?= $selectedOutputFormat === 'jpg' ? 'checked' : '' ?>>
+                            <input type="radio" name="output_format" value="jpg" <?= $selectedOutputFormat === 'jpg' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>>
                             JPG
                         </label>
                         <label>
-                            <input type="radio" name="output_format" value="gif" <?= $selectedOutputFormat === 'gif' ? 'checked' : '' ?>>
+                            <input type="radio" name="output_format" value="gif" <?= $selectedOutputFormat === 'gif' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>>
                             GIF
                         </label>
                     </div>
@@ -110,7 +179,7 @@ if ($directoryError !== null) {
                 <section class="selected-files" aria-labelledby="selected-files-title">
                     <div class="section-heading-row">
                         <h3 id="selected-files-title">選択ファイル一覧</h3>
-                        <?php if ($appendBatchId !== ''): ?>
+                        <?php if ($isAppendMode): ?>
                             <a class="button button-secondary button-small" href="result.php?batch=<?= h(rawurlencode($appendBatchId)) ?>">加工結果確認へ戻る</a>
                         <?php endif; ?>
                     </div>
@@ -121,6 +190,9 @@ if ($directoryError !== null) {
 
                 <div class="actions">
                     <button class="button button-primary" type="submit">加工する</button>
+                    <?php if ($isAppendMode): ?>
+                        <a class="button button-secondary" href="index.php">新しいバッチに切り替える</a>
+                    <?php endif; ?>
                 </div>
             </form>
         </section>

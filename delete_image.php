@@ -31,16 +31,25 @@ if ($itemIndex === null) {
 }
 
 $deletedItem = $metadata['items'][$itemIndex];
+$stagedFiles = is_array($deletedItem)
+    ? stageRelativeFilesForDeletion([
+        (string) ($deletedItem['original_path'] ?? ''),
+        (string) ($deletedItem['processed_path'] ?? ''),
+    ])
+    : [];
+
+if ($stagedFiles === null) {
+    respondJson(['success' => false, 'message' => '画像ファイルを削除できませんでした。'], 500);
+}
+
 array_splice($metadata['items'], $itemIndex, 1);
 
 if (!saveMetadata($batchId, $metadata)) {
+    rollbackStagedDeletes($stagedFiles);
     respondJson(['success' => false, 'message' => getErrorMessage('E_SAVE_FAILED')], 500);
 }
 
-if (is_array($deletedItem)) {
-    deleteRelativeFile((string) ($deletedItem['original_path'] ?? ''));
-    deleteRelativeFile((string) ($deletedItem['processed_path'] ?? ''));
-}
+$cleanupWarning = !finalizeStagedDeletes($stagedFiles);
 
 $counts = countItems($metadata['items']);
 respondJson([
@@ -48,6 +57,7 @@ respondJson([
     'total_count' => $counts['total'],
     'success_count' => $counts['success'],
     'error_count' => $counts['error'],
+    'cleanup_warning' => $cleanupWarning,
 ]);
 
 function findItemIndex(array $items, string $imageId): ?int
@@ -61,12 +71,54 @@ function findItemIndex(array $items, string $imageId): ?int
     return null;
 }
 
-function deleteRelativeFile(string $relativePath): void
+function stageRelativeFilesForDeletion(array $relativePaths): ?array
 {
-    $path = absolutePathFromBase($relativePath);
-    if ($path !== null && is_file($path)) {
-        @unlink($path);
+    $stagedFiles = [];
+
+    foreach ($relativePaths as $relativePath) {
+        $path = absolutePathFromBase((string) $relativePath);
+        if ($path === null || !is_file($path)) {
+            continue;
+        }
+
+        $stagedPath = $path . '.delete_' . bin2hex(random_bytes(4));
+        if (!@rename($path, $stagedPath)) {
+            rollbackStagedDeletes($stagedFiles);
+            return null;
+        }
+
+        $stagedFiles[] = [
+            'original' => $path,
+            'staged' => $stagedPath,
+        ];
     }
+
+    return $stagedFiles;
+}
+
+function rollbackStagedDeletes(array $stagedFiles): void
+{
+    foreach (array_reverse($stagedFiles) as $file) {
+        $original = (string) ($file['original'] ?? '');
+        $staged = (string) ($file['staged'] ?? '');
+        if ($staged !== '' && $original !== '' && is_file($staged) && !file_exists($original)) {
+            @rename($staged, $original);
+        }
+    }
+}
+
+function finalizeStagedDeletes(array $stagedFiles): bool
+{
+    $ok = true;
+
+    foreach ($stagedFiles as $file) {
+        $staged = (string) ($file['staged'] ?? '');
+        if ($staged !== '' && is_file($staged) && !@unlink($staged)) {
+            $ok = false;
+        }
+    }
+
+    return $ok;
 }
 
 function countItems(array $items): array

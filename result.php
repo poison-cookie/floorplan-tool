@@ -13,6 +13,13 @@ $successCount = count(array_filter($items, static fn($item): bool => is_array($i
 $errorCount = count($items) - $successCount;
 $cssVersion = (string) (@filemtime(__DIR__ . '/assets/css/style.css') ?: time());
 $jsVersion = (string) (@filemtime(__DIR__ . '/assets/js/app.js') ?: time());
+$errors = $_SESSION['flash_errors'] ?? [];
+unset($_SESSION['flash_errors']);
+$messages = $_SESSION['flash_messages'] ?? [];
+unset($_SESSION['flash_messages']);
+$isSavedBatch = $metadata !== null && (!empty($metadata['is_saved']) || (isValidBatchId($batchId) && is_file(getSavedMetadataPath($batchId))));
+$savedBatchName = $isSavedBatch && $metadata !== null ? savedBatchDisplayName($metadata, $batchId) : '';
+$zipFolderName = $metadata !== null ? sanitizeFilename((string) ($metadata['saved_name'] ?? '')) : '';
 ?>
 <!doctype html>
 <html lang="ja">
@@ -29,8 +36,29 @@ $jsVersion = (string) (@filemtime(__DIR__ . '/assets/js/app.js') ?: time());
             <h1>加工結果確認</h1>
             <div class="actions">
                 <a class="button button-secondary" href="index.php<?= isValidBatchId($batchId) ? '?batch=' . h(rawurlencode($batchId)) : '' ?>">アップロード画面へ戻る</a>
+                <a class="button button-secondary" href="index.php">新しいバッチを作成</a>
             </div>
         </header>
+
+        <?php if (!empty($errors)): ?>
+            <section class="error-box" role="alert">
+                <ul>
+                    <?php foreach ($errors as $error): ?>
+                        <li><?= h($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+        <?php endif; ?>
+
+        <?php if (!empty($messages)): ?>
+            <section class="success-box" role="status">
+                <ul>
+                    <?php foreach ($messages as $message): ?>
+                        <li><?= h($message) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+        <?php endif; ?>
 
         <?php if ($metadata === null): ?>
             <section class="error-box" role="alert">
@@ -57,6 +85,25 @@ $jsVersion = (string) (@filemtime(__DIR__ . '/assets/js/app.js') ?: time());
                 </div>
             </section>
 
+            <form class="save-batch-form" action="save_batch.php" method="post">
+                <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
+                <input type="hidden" name="batch_id" value="<?= h((string) $metadata['batch_id']) ?>">
+                <div class="save-batch-fields">
+                    <label for="saved-batch-name">保存名</label>
+                    <input
+                        id="saved-batch-name"
+                        class="filename-input"
+                        type="text"
+                        name="saved_name"
+                        value="<?= h($savedBatchName) ?>"
+                        placeholder="例: ○○マンション 3階"
+                        autocomplete="off"
+                    >
+                </div>
+                <button class="button button-primary" type="submit"><?= $isSavedBatch ? '保存名を更新' : 'このバッチを保存' ?></button>
+                <p class="helper-text save-batch-note"><?= $isSavedBatch ? '保存済みです。再編集した内容は保存データにも反映されます。' : 'あとで再編集できるように、この加工結果をバッチとして保存します。' ?></p>
+            </form>
+
             <?php if ($errorCount > 0): ?>
                 <section class="warning-box persistent" role="status" data-error-warning>
                     <span data-error-count><?= h((string) $errorCount) ?></span>件の画像を処理できませんでした。カード内のエラー内容を確認してください。
@@ -74,6 +121,7 @@ $jsVersion = (string) (@filemtime(__DIR__ . '/assets/js/app.js') ?: time());
                             class="filename-input"
                             type="text"
                             name="folder_name"
+                            value="<?= h($zipFolderName) ?>"
                             placeholder="例: ○○マンション"
                             autocomplete="off"
                         >
@@ -106,6 +154,10 @@ $jsVersion = (string) (@filemtime(__DIR__ . '/assets/js/app.js') ?: time());
                         data-card-index="<?= h((string) $cardNumber) ?>"
                         data-offset-x="<?= h((string) ((int) ($item['position_offset_x'] ?? 0))) ?>"
                         data-offset-y="<?= h((string) ((int) ($item['position_offset_y'] ?? 0))) ?>"
+                        data-scale-percent="<?= h((string) ((int) ($item['transform_scale_percent'] ?? 100))) ?>"
+                        data-rotation-degrees="<?= h((string) ((int) ($item['rotation_degrees'] ?? 0))) ?>"
+                        data-flip-horizontal="<?= !empty($item['flip_horizontal']) ? '1' : '0' ?>"
+                        data-flip-vertical="<?= !empty($item['flip_vertical']) ? '1' : '0' ?>"
                     >
                         <div class="card-topline">
                             <span class="item-number">No.<?= h((string) $cardNumber) ?></span>
@@ -166,6 +218,24 @@ $jsVersion = (string) (@filemtime(__DIR__ . '/assets/js/app.js') ?: time());
                                 </p>
                             </section>
 
+                            <section class="transform-controls" aria-labelledby="transform-title-<?= h($imageId) ?>">
+                                <h3 id="transform-title-<?= h($imageId) ?>">拡大・回転・反転</h3>
+                                <div class="transform-button-grid">
+                                    <button class="position-button" type="button" data-position-action="zoom_in">拡大</button>
+                                    <button class="position-button" type="button" data-position-action="zoom_out">縮小</button>
+                                    <button class="position-button" type="button" data-position-action="rotate_left">左90°</button>
+                                    <button class="position-button" type="button" data-position-action="rotate_right">右90°</button>
+                                    <button class="position-button" type="button" data-position-action="flip_horizontal">左右反転</button>
+                                    <button class="position-button" type="button" data-position-action="flip_vertical">上下反転</button>
+                                </div>
+                                <p class="transform-status" aria-live="polite">
+                                    拡大率: <span data-scale-percent><?= h((string) ((int) ($item['transform_scale_percent'] ?? 100))) ?></span>% /
+                                    回転: <span data-rotation-degrees><?= h((string) ((int) ($item['rotation_degrees'] ?? 0))) ?></span>° /
+                                    左右反転: <span data-flip-horizontal><?= !empty($item['flip_horizontal']) ? 'ON' : 'OFF' ?></span> /
+                                    上下反転: <span data-flip-vertical><?= !empty($item['flip_vertical']) ? 'ON' : 'OFF' ?></span>
+                                </p>
+                            </section>
+
                             <form class="download-form" action="download.php" method="post">
                                 <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                                 <input type="hidden" name="batch_id" value="<?= h((string) $metadata['batch_id']) ?>">
@@ -179,10 +249,12 @@ $jsVersion = (string) (@filemtime(__DIR__ . '/assets/js/app.js') ?: time());
                                         type="text"
                                         name="filename"
                                         value="<?= h($defaultFilename) ?>"
+                                        data-filename-autosave
                                         autocomplete="off"
                                     >
                                     <span class="extension-label">.<?= h((string) $metadata['output_format']) ?></span>
                                 </div>
+                                <p class="filename-save-status" data-filename-save-status aria-live="polite"></p>
 
                                 <button class="button button-secondary" type="submit">個別ダウンロード</button>
                             </form>

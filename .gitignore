@@ -1,0 +1,11 @@
+/uploads/original/*
+/uploads/processed/*
+/uploads/zip/*
+/tmp/batches/*
+/data/saved_batches/*
+/.playwright-mcp/
+
+!/data/
+!/data/.htaccess
+!/data/saved_batches/
+!/data/saved_batches/.htaccess

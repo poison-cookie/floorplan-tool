@@ -17,6 +17,8 @@ function ensureDirectories(): void
         UPLOAD_PROCESSED_DIR,
         UPLOAD_ZIP_DIR,
         BATCH_DIR,
+        DATA_DIR,
+        SAVED_BATCH_DIR,
     ];
 
     foreach ($directories as $directory) {
@@ -52,7 +54,7 @@ function verifyCsrfToken(string $token): bool
 
 function generateBatchId(): string
 {
-    return date('Ymd_His') . '_' . bin2hex(random_bytes(3));
+    return date('Ymd_His') . '_' . bin2hex(random_bytes(8));
 }
 
 function isValidBatchId(string $batchId): bool
@@ -301,7 +303,11 @@ function processImageToSquare(
     string $inputExtension,
     string $outputFormat,
     int $offsetX = 0,
-    int $offsetY = 0
+    int $offsetY = 0,
+    int $scalePercent = 100,
+    int $rotationDegrees = 0,
+    bool $flipHorizontal = false,
+    bool $flipVertical = false
 ): array
 {
     $result = [
@@ -312,6 +318,10 @@ function processImageToSquare(
         'resized_height' => null,
         'offset_x' => 0,
         'offset_y' => 0,
+        'scale_percent' => 100,
+        'rotation_degrees' => 0,
+        'flip_horizontal' => false,
+        'flip_vertical' => false,
         'error' => null,
     ];
 
@@ -328,17 +338,31 @@ function processImageToSquare(
 
     $sourceWidth = imagesx($sourceImage);
     $sourceHeight = imagesy($sourceImage);
-    $longSide = max($sourceWidth, $sourceHeight);
+    $scalePercent = clampInt($scalePercent, 20, 300);
+    $rotationDegrees = normalizeRotationDegrees($rotationDegrees);
+    $workingImage = transformImageResource($sourceImage, $rotationDegrees, $flipHorizontal, $flipVertical);
+    if ($workingImage === false) {
+        imagedestroy($sourceImage);
+        $result['error'] = 'E_PROCESS_FAILED';
+        return $result;
+    }
+
+    $workingWidth = imagesx($workingImage);
+    $workingHeight = imagesy($workingImage);
+    $longSide = max($workingWidth, $workingHeight);
 
     if ($longSide <= 0) {
+        if ($workingImage !== $sourceImage) {
+            imagedestroy($workingImage);
+        }
         imagedestroy($sourceImage);
         $result['error'] = 'E_IMAGE_INVALID';
         return $result;
     }
 
-    $scale = OUTPUT_SIZE / $longSide;
-    $resizedWidth = max(1, (int) round($sourceWidth * $scale));
-    $resizedHeight = max(1, (int) round($sourceHeight * $scale));
+    $scale = (OUTPUT_SIZE / $longSide) * ($scalePercent / 100);
+    $resizedWidth = max(1, (int) round($workingWidth * $scale));
+    $resizedHeight = max(1, (int) round($workingHeight * $scale));
     $centerX = (int) floor((OUTPUT_SIZE - $resizedWidth) / 2);
     $centerY = (int) floor((OUTPUT_SIZE - $resizedHeight) / 2);
     $dstX = clampCanvasPosition($centerX + $offsetX, $resizedWidth);
@@ -346,6 +370,9 @@ function processImageToSquare(
 
     $canvas = imagecreatetruecolor(OUTPUT_SIZE, OUTPUT_SIZE);
     if ($canvas === false) {
+        if ($workingImage !== $sourceImage) {
+            imagedestroy($workingImage);
+        }
         imagedestroy($sourceImage);
         $result['error'] = 'E_PROCESS_FAILED';
         return $result;
@@ -356,18 +383,21 @@ function processImageToSquare(
 
     $copied = imagecopyresampled(
         $canvas,
-        $sourceImage,
+        $workingImage,
         $dstX,
         $dstY,
         0,
         0,
         $resizedWidth,
         $resizedHeight,
-        $sourceWidth,
-        $sourceHeight
+        $workingWidth,
+        $workingHeight
     );
 
     if (!$copied) {
+        if ($workingImage !== $sourceImage) {
+            imagedestroy($workingImage);
+        }
         imagedestroy($sourceImage);
         imagedestroy($canvas);
         $result['error'] = 'E_PROCESS_FAILED';
@@ -376,6 +406,9 @@ function processImageToSquare(
 
     $destDirectory = dirname($destPath);
     if (!is_dir($destDirectory) && !mkdir($destDirectory, 0775, true) && !is_dir($destDirectory)) {
+        if ($workingImage !== $sourceImage) {
+            imagedestroy($workingImage);
+        }
         imagedestroy($sourceImage);
         imagedestroy($canvas);
         $result['error'] = 'E_SAVE_FAILED';
@@ -384,6 +417,9 @@ function processImageToSquare(
 
     $saved = saveImageResource($canvas, $destPath, normalizeOutputFormat($outputFormat));
 
+    if ($workingImage !== $sourceImage) {
+        imagedestroy($workingImage);
+    }
     imagedestroy($sourceImage);
     imagedestroy($canvas);
 
@@ -399,8 +435,58 @@ function processImageToSquare(
     $result['resized_height'] = $resizedHeight;
     $result['offset_x'] = $dstX - $centerX;
     $result['offset_y'] = $dstY - $centerY;
+    $result['scale_percent'] = $scalePercent;
+    $result['rotation_degrees'] = $rotationDegrees;
+    $result['flip_horizontal'] = $flipHorizontal;
+    $result['flip_vertical'] = $flipVertical;
 
     return $result;
+}
+
+function transformImageResource($sourceImage, int $rotationDegrees, bool $flipHorizontal, bool $flipVertical)
+{
+    $workingImage = $sourceImage;
+    $rotationDegrees = normalizeRotationDegrees($rotationDegrees);
+
+    if ($rotationDegrees !== 0) {
+        $background = imagecolorallocate($workingImage, BACKGROUND_R, BACKGROUND_G, BACKGROUND_B);
+        $rotationAngle = (360 - $rotationDegrees) % 360;
+        $rotatedImage = imagerotate($workingImage, $rotationAngle, $background);
+        if ($rotatedImage === false) {
+            return false;
+        }
+
+        if ($workingImage !== $sourceImage) {
+            imagedestroy($workingImage);
+        }
+        $workingImage = $rotatedImage;
+    }
+
+    if ($flipHorizontal && !imageflip($workingImage, IMG_FLIP_HORIZONTAL)) {
+        if ($workingImage !== $sourceImage) {
+            imagedestroy($workingImage);
+        }
+        return false;
+    }
+
+    if ($flipVertical && !imageflip($workingImage, IMG_FLIP_VERTICAL)) {
+        if ($workingImage !== $sourceImage) {
+            imagedestroy($workingImage);
+        }
+        return false;
+    }
+
+    return $workingImage;
+}
+
+function normalizeRotationDegrees(int $rotationDegrees): int
+{
+    $rotationDegrees %= 360;
+    if ($rotationDegrees < 0) {
+        $rotationDegrees += 360;
+    }
+
+    return intdiv($rotationDegrees + 45, 90) * 90 % 360;
 }
 
 function clampInt(int $value, int $min, int $max): int
@@ -438,13 +524,26 @@ function saveMetadata(string $batchId, array $metadata): bool
     }
 
     ensureDirectories();
+    $metadata['batch_id'] = $batchId;
+    $shouldSaveBatch = shouldPersistSavedBatch($batchId, $metadata);
+    if ($shouldSaveBatch) {
+        $metadata['is_saved'] = true;
+    }
 
-    $json = json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-    if ($json === false) {
+    if ($shouldSaveBatch) {
+        if (!writeMetadataFile(getSavedMetadataPath($batchId), $metadata)) {
+            return false;
+        }
+
+        writeMetadataFile(getMetadataPath($batchId), $metadata);
+        return true;
+    }
+
+    if (!writeMetadataFile(getMetadataPath($batchId), $metadata)) {
         return false;
     }
 
-    return file_put_contents(getMetadataPath($batchId), $json, LOCK_EX) !== false;
+    return true;
 }
 
 function loadMetadata(string $batchId): ?array
@@ -453,7 +552,33 @@ function loadMetadata(string $batchId): ?array
         return null;
     }
 
-    $path = getMetadataPath($batchId);
+    foreach ([getSavedMetadataPath($batchId), getMetadataPath($batchId)] as $path) {
+        $metadata = readMetadataFile($path);
+        if ($metadata !== null) {
+            return $metadata;
+        }
+    }
+
+    return null;
+}
+
+function getMetadataPath(string $batchId): string
+{
+    return BATCH_DIR . DIRECTORY_SEPARATOR . $batchId . '.json';
+}
+
+function getSavedMetadataPath(string $batchId): string
+{
+    return SAVED_BATCH_DIR . DIRECTORY_SEPARATOR . $batchId . '.json';
+}
+
+function shouldPersistSavedBatch(string $batchId, array $metadata): bool
+{
+    return !empty($metadata['is_saved']) || is_file(getSavedMetadataPath($batchId));
+}
+
+function readMetadataFile(string $path): ?array
+{
     if (!is_file($path)) {
         return null;
     }
@@ -467,9 +592,169 @@ function loadMetadata(string $batchId): ?array
     return is_array($metadata) ? $metadata : null;
 }
 
-function getMetadataPath(string $batchId): string
+function writeMetadataFile(string $path, array $metadata): bool
 {
-    return BATCH_DIR . DIRECTORY_SEPARATOR . $batchId . '.json';
+    $directory = dirname($path);
+    if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+        return false;
+    }
+
+    $json = json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    if ($json === false) {
+        return false;
+    }
+
+    return writeFileAtomically($path, $json);
+}
+
+function writeFileAtomically(string $path, string $contents): bool
+{
+    $directory = dirname($path);
+    $temporaryPath = $directory . DIRECTORY_SEPARATOR . '.tmp_' . basename($path) . '_' . bin2hex(random_bytes(4));
+
+    if (file_put_contents($temporaryPath, $contents, LOCK_EX) === false) {
+        return false;
+    }
+
+    if (PHP_OS_FAMILY === 'Windows' && is_file($path) && !@unlink($path)) {
+        @unlink($temporaryPath);
+        return false;
+    }
+
+    if (!@rename($temporaryPath, $path)) {
+        @unlink($temporaryPath);
+        return false;
+    }
+
+    return true;
+}
+
+function listSavedBatches(): array
+{
+    ensureDirectories();
+
+    $paths = glob(SAVED_BATCH_DIR . DIRECTORY_SEPARATOR . '*.json') ?: [];
+    $batches = [];
+
+    foreach ($paths as $path) {
+        $batchId = pathinfo($path, PATHINFO_FILENAME);
+        if (!isValidBatchId($batchId)) {
+            continue;
+        }
+
+        $metadata = readMetadataFile($path);
+        if ($metadata === null) {
+            continue;
+        }
+
+        $items = is_array($metadata['items'] ?? null) ? $metadata['items'] : [];
+        $successCount = count(array_filter($items, static fn($item): bool => is_array($item) && ($item['status'] ?? '') === 'success'));
+        $updatedAt = (string) ($metadata['updated_at'] ?? $metadata['saved_at'] ?? $metadata['created_at'] ?? '');
+
+        $batches[] = [
+            'batch_id' => $batchId,
+            'saved_name' => savedBatchDisplayName($metadata, $batchId),
+            'output_format' => normalizeOutputFormat($metadata['output_format'] ?? DEFAULT_OUTPUT_FORMAT),
+            'total_count' => count($items),
+            'success_count' => $successCount,
+            'updated_at' => $updatedAt,
+            'updated_timestamp' => strtotime($updatedAt) ?: 0,
+        ];
+    }
+
+    usort($batches, static function (array $a, array $b): int {
+        return ($b['updated_timestamp'] <=> $a['updated_timestamp'])
+            ?: strcmp((string) $b['batch_id'], (string) $a['batch_id']);
+    });
+
+    return $batches;
+}
+
+function savedBatchDisplayName(array $metadata, string $batchId): string
+{
+    $savedName = sanitizeFilename((string) ($metadata['saved_name'] ?? ''));
+    return $savedName !== '' ? $savedName : $batchId;
+}
+
+function deleteBatchData(string $batchId): bool
+{
+    if (!isValidBatchId($batchId)) {
+        return false;
+    }
+
+    $ok = true;
+    $ok = deleteDirectoryInside(UPLOAD_ORIGINAL_DIR . DIRECTORY_SEPARATOR . $batchId, UPLOAD_ORIGINAL_DIR) && $ok;
+    $ok = deleteDirectoryInside(UPLOAD_PROCESSED_DIR . DIRECTORY_SEPARATOR . $batchId, UPLOAD_PROCESSED_DIR) && $ok;
+
+    foreach (glob(UPLOAD_ZIP_DIR . DIRECTORY_SEPARATOR . $batchId . '_*.zip') ?: [] as $zipPath) {
+        $ok = deleteFileInside($zipPath, UPLOAD_ZIP_DIR) && $ok;
+    }
+
+    foreach ([getMetadataPath($batchId), getSavedMetadataPath($batchId)] as $metadataPath) {
+        if (is_file($metadataPath) && !@unlink($metadataPath)) {
+            $ok = false;
+        }
+    }
+
+    return $ok;
+}
+
+function deleteDirectoryInside(string $directory, string $allowedParent): bool
+{
+    if (!is_dir($directory)) {
+        return true;
+    }
+
+    $target = realpath($directory);
+    $parent = realpath($allowedParent);
+    if ($target === false || $parent === false || !isPathInside($target, $parent)) {
+        return false;
+    }
+
+    try {
+        $items = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($target, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+    } catch (UnexpectedValueException $exception) {
+        return false;
+    }
+
+    foreach ($items as $item) {
+        $path = $item->getPathname();
+        if ($item->isDir()) {
+            if (!@rmdir($path)) {
+                return false;
+            }
+        } elseif (!@unlink($path)) {
+            return false;
+        }
+    }
+
+    return @rmdir($target);
+}
+
+function deleteFileInside(string $path, string $allowedParent): bool
+{
+    if (!is_file($path)) {
+        return true;
+    }
+
+    $target = realpath($path);
+    $parent = realpath($allowedParent);
+    if ($target === false || $parent === false || !isPathInside($target, $parent)) {
+        return false;
+    }
+
+    return @unlink($target);
+}
+
+function isPathInside(string $target, string $parent): bool
+{
+    $target = str_replace('\\', '/', $target);
+    $parent = rtrim(str_replace('\\', '/', $parent), '/') . '/';
+
+    return strpos($target, $parent) === 0;
 }
 
 function findItemByImageId(array $metadata, string $imageId): ?array

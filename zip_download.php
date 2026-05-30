@@ -90,6 +90,9 @@ foreach ($successItems as $imageId => $item) {
 $zip->close();
 
 if ($addedCount === 0 || !is_file($zipPath)) {
+    if (is_file($zipPath)) {
+        @unlink($zipPath);
+    }
     failZipDownload(getErrorMessage('E_ZIP_FAILED'), 500);
 }
 
@@ -98,6 +101,7 @@ header('Content-Length: ' . filesize($zipPath));
 header('Content-Disposition: ' . buildAttachmentDisposition($zipName));
 header('X-Content-Type-Options: nosniff');
 readfile($zipPath);
+@unlink($zipPath);
 exit;
 
 function failZipDownload(string $message, int $statusCode): void

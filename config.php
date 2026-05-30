@@ -7,6 +7,8 @@ define('UPLOAD_ORIGINAL_DIR', BASE_DIR . DIRECTORY_SEPARATOR . 'uploads' . DIREC
 define('UPLOAD_PROCESSED_DIR', BASE_DIR . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'processed');
 define('UPLOAD_ZIP_DIR', BASE_DIR . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'zip');
 define('BATCH_DIR', BASE_DIR . DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . 'batches');
+define('DATA_DIR', BASE_DIR . DIRECTORY_SEPARATOR . 'data');
+define('SAVED_BATCH_DIR', DATA_DIR . DIRECTORY_SEPARATOR . 'saved_batches');
 
 define('UPLOAD_ORIGINAL_PUBLIC_PATH', 'uploads/original');
 define('UPLOAD_PROCESSED_PUBLIC_PATH', 'uploads/processed');
@@ -26,7 +28,7 @@ define('ALLOWED_OUTPUT_FORMATS', ['gif', 'png', 'jpg']);
 define('ALLOWED_MIME_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 
 define('SESSION_KEY_CSRF', 'csrf_token');
-define('BATCH_ID_PATTERN', '/^\d{8}_\d{6}_[a-f0-9]{6}$/');
+define('BATCH_ID_PATTERN', '/^\d{8}_\d{6}_[a-f0-9]{6,16}$/');
 define('IMAGE_ID_PATTERN', '/^img_\d{3,}$/');
 
 define('ERROR_MESSAGES', [
