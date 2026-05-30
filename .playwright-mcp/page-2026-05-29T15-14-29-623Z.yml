@@ -1,0 +1,47 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - paragraph [ref=e4]: Processing Result
+    - heading "加工結果確認" [level=1] [ref=e5]
+    - link "アップロード画面へ戻る" [ref=e7] [cursor=pointer]:
+      - /url: index.php
+  - region "処理概要" [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]: 処理枚数
+      - strong [ref=e11]: 1 / 1枚
+    - generic [ref=e12]:
+      - generic [ref=e13]: 出力形式
+      - strong [ref=e14]: PNG
+    - generic [ref=e15]:
+      - generic [ref=e16]: 出力サイズ
+      - strong [ref=e17]: 500 × 500
+    - generic [ref=e18]:
+      - generic [ref=e19]: 処理ID
+      - strong [ref=e20]: 20260529_171428_8b410d
+  - button "すべてZIPでダウンロード" [ref=e22] [cursor=pointer]
+  - region "加工結果一覧" [ref=e23]:
+    - article [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]: No.1
+        - generic [ref=e27]: 加工済み
+      - 'link "加工済み画像: screenshot_001_erased.png" [ref=e28] [cursor=pointer]':
+        - /url: uploads/processed/20260529_171428_8b410d/img_001.png
+        - 'img "加工済み画像: screenshot_001_erased.png" [ref=e29]'
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - term [ref=e32]: 元ファイル名
+          - definition [ref=e33]: screenshot_001_erased.png
+        - generic [ref=e34]:
+          - term [ref=e35]: 画像サイズ
+          - definition [ref=e36]: 500 × 500
+        - generic [ref=e37]:
+          - term [ref=e38]: 出力形式
+          - definition [ref=e39]: PNG
+        - generic [ref=e40]:
+          - term [ref=e41]: リサイズ後
+          - definition [ref=e42]: 500 × 333
+      - generic [ref=e43]:
+        - generic [ref=e44]: ファイル名
+        - generic [ref=e45]:
+          - textbox "ファイル名" [ref=e46]: screenshot_001_erased
+          - generic [ref=e47]: .png
+        - button "個別ダウンロード" [ref=e48] [cursor=pointer]

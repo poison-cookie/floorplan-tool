@@ -1,0 +1,129 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - paragraph [ref=e4]: Processing Result
+    - heading "加工結果確認" [level=1] [ref=e5]
+    - link "アップロード画面へ戻る" [ref=e7] [cursor=pointer]:
+      - /url: index.php?batch=20260529_173619_f1c458
+  - region "処理概要" [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]: 処理枚数
+      - strong [ref=e11]: 3 / 3枚
+    - generic [ref=e12]:
+      - generic [ref=e13]: 出力形式
+      - strong [ref=e14]: GIF
+    - generic [ref=e15]:
+      - generic [ref=e16]: 出力サイズ
+      - strong [ref=e17]: 500 × 500
+    - generic [ref=e18]:
+      - generic [ref=e19]: 処理ID
+      - strong [ref=e20]: 20260529_173619_f1c458
+  - button "すべてZIPでダウンロード" [ref=e22] [cursor=pointer]
+  - region "加工結果一覧" [ref=e23]:
+    - article [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]: No.1
+        - generic [ref=e27]: 加工済み
+        - button "削除" [ref=e28] [cursor=pointer]
+      - 'link "加工済み画像: screenshot_001.png" [ref=e29] [cursor=pointer]':
+        - /url: uploads/processed/20260529_173619_f1c458/img_001.gif
+        - 'img "加工済み画像: screenshot_001.png" [ref=e30]'
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - term [ref=e33]: 元ファイル名
+          - definition [ref=e34]: screenshot_001.png
+        - generic [ref=e35]:
+          - term [ref=e36]: 画像サイズ
+          - definition [ref=e37]: 500 × 500
+        - generic [ref=e38]:
+          - term [ref=e39]: 出力形式
+          - definition [ref=e40]: GIF
+        - generic [ref=e41]:
+          - term [ref=e42]: リサイズ後
+          - definition [ref=e43]: 342 × 500
+      - region "位置調整" [ref=e44]:
+        - heading "位置調整" [level=3] [ref=e45]
+        - generic "上下左右の位置調整" [ref=e46]:
+          - button "上へ移動" [ref=e47] [cursor=pointer]: ↑
+          - button "左へ移動" [ref=e48] [cursor=pointer]: ←
+          - button "中央" [ref=e49] [cursor=pointer]
+          - button "右へ移動" [ref=e50] [cursor=pointer]: →
+          - button "下へ移動" [ref=e51] [cursor=pointer]: ↓
+        - paragraph [ref=e52]: "横: 0px / 縦: 0px"
+      - generic [ref=e53]:
+        - generic [ref=e54]: ファイル名
+        - generic [ref=e55]:
+          - textbox "ファイル名" [ref=e56]: screenshot_001
+          - generic [ref=e57]: .gif
+        - button "個別ダウンロード" [ref=e58] [cursor=pointer]
+    - article [ref=e59]:
+      - generic [ref=e60]:
+        - generic [ref=e61]: No.2
+        - generic [ref=e62]: 加工済み
+        - button "削除" [ref=e63] [cursor=pointer]
+      - 'link "加工済み画像: タイトルなし.gif" [ref=e64] [cursor=pointer]':
+        - /url: uploads/processed/20260529_173619_f1c458/img_002.gif
+        - 'img "加工済み画像: タイトルなし.gif" [ref=e65]'
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - term [ref=e68]: 元ファイル名
+          - definition [ref=e69]: タイトルなし.gif
+        - generic [ref=e70]:
+          - term [ref=e71]: 画像サイズ
+          - definition [ref=e72]: 500 × 500
+        - generic [ref=e73]:
+          - term [ref=e74]: 出力形式
+          - definition [ref=e75]: GIF
+        - generic [ref=e76]:
+          - term [ref=e77]: リサイズ後
+          - definition [ref=e78]: 500 × 500
+      - region "位置調整" [ref=e79]:
+        - heading "位置調整" [level=3] [ref=e80]
+        - generic "上下左右の位置調整" [ref=e81]:
+          - button "上へ移動" [ref=e82] [cursor=pointer]: ↑
+          - button "左へ移動" [ref=e83] [cursor=pointer]: ←
+          - button "中央" [ref=e84] [cursor=pointer]
+          - button "右へ移動" [ref=e85] [cursor=pointer]: →
+          - button "下へ移動" [ref=e86] [cursor=pointer]: ↓
+        - paragraph [ref=e87]: "横: 40px / 縦: 0px"
+      - generic [ref=e88]:
+        - generic [ref=e89]: ファイル名
+        - generic [ref=e90]:
+          - textbox "ファイル名" [ref=e91]: タイトルなし
+          - generic [ref=e92]: .gif
+        - button "個別ダウンロード" [ref=e93] [cursor=pointer]
+    - article [ref=e94]:
+      - generic [ref=e95]:
+        - generic [ref=e96]: No.3
+        - generic [ref=e97]: 加工済み
+        - button "削除" [ref=e98] [cursor=pointer]
+      - 'link "加工済み画像: タイトルなし.png" [ref=e99] [cursor=pointer]':
+        - /url: uploads/processed/20260529_173619_f1c458/img_003.gif
+        - 'img "加工済み画像: タイトルなし.png" [ref=e100]'
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - term [ref=e103]: 元ファイル名
+          - definition [ref=e104]: タイトルなし.png
+        - generic [ref=e105]:
+          - term [ref=e106]: 画像サイズ
+          - definition [ref=e107]: 500 × 500
+        - generic [ref=e108]:
+          - term [ref=e109]: 出力形式
+          - definition [ref=e110]: GIF
+        - generic [ref=e111]:
+          - term [ref=e112]: リサイズ後
+          - definition [ref=e113]: 297 × 500
+      - region "位置調整" [ref=e114]:
+        - heading "位置調整" [level=3] [ref=e115]
+        - generic "上下左右の位置調整" [ref=e116]:
+          - button "上へ移動" [ref=e117] [cursor=pointer]: ↑
+          - button "左へ移動" [ref=e118] [cursor=pointer]: ←
+          - button "中央" [ref=e119] [cursor=pointer]
+          - button "右へ移動" [ref=e120] [cursor=pointer]: →
+          - button "下へ移動" [ref=e121] [cursor=pointer]: ↓
+        - paragraph [ref=e122]: "横: 0px / 縦: 0px"
+      - generic [ref=e123]:
+        - generic [ref=e124]: ファイル名
+        - generic [ref=e125]:
+          - textbox "ファイル名" [ref=e126]: タイトルなし
+          - generic [ref=e127]: .gif
+        - button "個別ダウンロード" [ref=e128] [cursor=pointer]

@@ -1,0 +1,62 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - paragraph [ref=e4]: Processing Result
+    - heading "加工結果確認" [level=1] [ref=e5]
+    - link "アップロード画面へ戻る" [ref=e7] [cursor=pointer]:
+      - /url: index.php?batch=20260530_020720_6a9052
+  - region "処理概要" [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]: 処理枚数
+      - strong [ref=e11]: 1 / 1枚
+    - generic [ref=e12]:
+      - generic [ref=e13]: 出力形式
+      - strong [ref=e14]: PNG
+    - generic [ref=e15]:
+      - generic [ref=e16]: 出力サイズ
+      - strong [ref=e17]: 500 × 500
+    - generic [ref=e18]:
+      - generic [ref=e19]: 処理ID
+      - strong [ref=e20]: 20260530_020720_6a9052
+  - generic [ref=e21]:
+    - generic [ref=e22]:
+      - generic [ref=e23]: ZIP内フォルダ名
+      - textbox "ZIP内フォルダ名" [ref=e24]:
+        - /placeholder: "例: ○○マンション"
+    - button "すべてZIPでダウンロード" [ref=e25] [cursor=pointer]
+  - region "加工結果一覧" [ref=e26]:
+    - article [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: No.1
+        - generic [ref=e30]: 加工済み
+        - button "削除" [ref=e31] [cursor=pointer]
+      - 'link "加工済み画像: preview_a.png" [ref=e32] [cursor=pointer]':
+        - /url: uploads/processed/20260530_020720_6a9052/img_001.png
+        - 'img "加工済み画像: preview_a.png" [ref=e33]'
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - term [ref=e36]: 元ファイル名
+          - definition [ref=e37]: preview_a.png
+        - generic [ref=e38]:
+          - term [ref=e39]: 画像サイズ
+          - definition [ref=e40]: 500 × 500
+        - generic [ref=e41]:
+          - term [ref=e42]: 出力形式
+          - definition [ref=e43]: PNG
+        - generic [ref=e44]:
+          - term [ref=e45]: リサイズ後
+          - definition [ref=e46]: 500 × 321
+      - region "位置調整" [ref=e47]:
+        - heading "位置調整" [level=3] [ref=e48]
+        - generic "上下左右の位置調整" [ref=e49]:
+          - button "上へ移動" [ref=e50] [cursor=pointer]: ↑
+          - button "左へ移動" [ref=e51] [cursor=pointer]: ←
+          - button "中央" [ref=e52] [cursor=pointer]
+          - button "右へ移動" [ref=e53] [cursor=pointer]: →
+          - button "下へ移動" [ref=e54] [cursor=pointer]: ↓
+        - paragraph [ref=e55]: "横: 0px / 縦: 0px"
+      - generic [ref=e56]:
+        - generic [ref=e57]: ファイル名
+        - generic [ref=e58]:
+          - textbox "ファイル名" [ref=e59]: テスト物件A
+          - generic [ref=e60]: .png
+        - button "個別ダウンロード" [ref=e61] [cursor=pointer]

@@ -1,0 +1,25 @@
+{
+    "batch_id": "20260529_173533_940a59",
+    "created_at": "2026-05-29 17:35:33",
+    "output_format": "jpg",
+    "output_size": 500,
+    "items": [
+        {
+            "image_id": "img_001",
+            "original_name": "screenshot_001.png",
+            "default_filename": "screenshot_001",
+            "original_path": "uploads/original/20260529_173533_940a59/img_001.png",
+            "processed_path": "uploads/processed/20260529_173533_940a59/img_001.jpg",
+            "mime_type": "image/png",
+            "source_width": 609,
+            "source_height": 999,
+            "resized_width": 305,
+            "resized_height": 500,
+            "position_offset_x": 0,
+            "position_offset_y": 0,
+            "status": "success",
+            "error": null,
+            "error_message": null
+        }
+    ]
+}

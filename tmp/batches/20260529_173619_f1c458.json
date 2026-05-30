@@ -1,0 +1,43 @@
+{
+    "batch_id": "20260529_173619_f1c458",
+    "created_at": "2026-05-29 17:36:19",
+    "output_format": "gif",
+    "output_size": 500,
+    "items": [
+        {
+            "image_id": "img_001",
+            "original_name": "screenshot_001.png",
+            "default_filename": "screenshot_001",
+            "original_path": "uploads/original/20260529_173619_f1c458/img_001.png",
+            "processed_path": "uploads/processed/20260529_173619_f1c458/img_001.gif",
+            "mime_type": "image/png",
+            "source_width": 633,
+            "source_height": 926,
+            "resized_width": 342,
+            "resized_height": 500,
+            "position_offset_x": 0,
+            "position_offset_y": 0,
+            "status": "success",
+            "error": null,
+            "error_message": null
+        },
+        {
+            "image_id": "img_002",
+            "original_name": "タイトルなし.gif",
+            "default_filename": "タイトルなし",
+            "original_path": "uploads/original/20260529_173619_f1c458/img_002.gif",
+            "processed_path": "uploads/processed/20260529_173619_f1c458/img_002.gif",
+            "mime_type": "image/gif",
+            "source_width": 500,
+            "source_height": 500,
+            "resized_width": 500,
+            "resized_height": 500,
+            "position_offset_x": 40,
+            "position_offset_y": 0,
+            "status": "success",
+            "error": null,
+            "error_message": null
+        }
+    ],
+    "updated_at": "2026-05-30 02:09:54"
+}

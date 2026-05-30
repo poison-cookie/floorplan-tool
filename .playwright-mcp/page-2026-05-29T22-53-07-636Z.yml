@@ -1,0 +1,45 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - paragraph [ref=e4]: Floorplan Image Tool
+    - heading "間取り図画像自動加工ツール" [level=1] [ref=e5]
+    - paragraph [ref=e6]: アップロードした間取り図画像を、縦横比を維持したまま長辺500pxにリサイズし、500px × 500pxの画像として出力します。 縦長・横長画像の場合は、短辺側に白い余白を付けて中央配置します。
+  - region "画像をアップロード" [ref=e7]:
+    - heading "画像をアップロード" [level=2] [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: 画像ファイル
+        - button "画像ファイル" [ref=e12]
+        - paragraph [ref=e13]: 1枚のファイルが選択されています。
+      - button "スクリーンショットを貼り付け 範囲スクリーンショット後、この画面で Ctrl + V" [ref=e14]:
+        - strong [ref=e15]: スクリーンショットを貼り付け
+        - generic [ref=e16]: 範囲スクリーンショット後、この画面で Ctrl + V
+      - paragraph [ref=e54]: 選択から削除しました。
+      - group "出力形式" [ref=e17]:
+        - generic [ref=e18]: 出力形式
+        - radiogroup "出力形式" [ref=e19]:
+          - generic [ref=e20]:
+            - radio "PNG" [checked] [ref=e21]
+            - text: PNG
+          - generic [ref=e22]:
+            - radio "JPG" [ref=e23]
+            - text: JPG
+          - generic [ref=e24]:
+            - radio "GIF" [ref=e25]
+            - text: GIF
+      - region "選択ファイル一覧" [ref=e26]:
+        - heading "選択ファイル一覧" [level=3] [ref=e27]
+        - list [ref=e38]:
+          - listitem [ref=e55]:
+            - generic [ref=e56]: browser_b.png
+            - generic [ref=e57]:
+              - button "範囲削除" [ref=e58] [cursor=pointer]
+              - button "一覧から削除" [ref=e59] [cursor=pointer]
+      - button "加工する" [ref=e29] [cursor=pointer]
+  - complementary "注意事項" [ref=e30]:
+    - heading "注意事項" [level=2] [ref=e31]
+    - list [ref=e32]:
+      - listitem [ref=e33]: "対応形式: jpg / jpeg / png / gif"
+      - listitem [ref=e34]: 一度に最大50枚まで処理できます。
+      - listitem [ref=e35]: 1ファイルあたり10MBまでアップロードできます。
+      - listitem [ref=e36]: 範囲スクリーンショットは保存せず、そのまま貼り付けできます。
+      - listitem [ref=e37]: 出力形式は gif / png / jpg から選択できます。
