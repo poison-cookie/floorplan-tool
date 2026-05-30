@@ -129,14 +129,21 @@ $metadata['items'][$itemIndex]['transform_scale_percent'] = $processResult['scal
 $metadata['items'][$itemIndex]['rotation_degrees'] = $processResult['rotation_degrees'];
 $metadata['items'][$itemIndex]['flip_horizontal'] = $processResult['flip_horizontal'];
 $metadata['items'][$itemIndex]['flip_vertical'] = $processResult['flip_vertical'];
+$metadata['items'][$itemIndex]['processed_version'] = bin2hex(random_bytes(8));
+$metadata['updated_at'] = date('Y-m-d H:i:s');
 
 if (!saveMetadata($batchId, $metadata)) {
     respondJson(['success' => false, 'message' => getErrorMessage('E_SAVE_FAILED')], 500);
 }
 
+$imageUrl = versionedPublicPath(
+    (string) $metadata['items'][$itemIndex]['processed_path'],
+    (string) $metadata['items'][$itemIndex]['processed_version']
+);
+
 respondJson([
     'success' => true,
-    'image_url' => (string) $metadata['items'][$itemIndex]['processed_path'] . '?v=' . bin2hex(random_bytes(4)),
+    'image_url' => $imageUrl,
     'offset_x' => $processResult['offset_x'],
     'offset_y' => $processResult['offset_y'],
     'scale_percent' => $processResult['scale_percent'],

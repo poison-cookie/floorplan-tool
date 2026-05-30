@@ -105,6 +105,7 @@ foreach ($files as $index => $file) {
         'rotation_degrees' => 0,
         'flip_horizontal' => false,
         'flip_vertical' => false,
+        'processed_version' => null,
         'status' => 'error',
         'error' => null,
         'error_message' => null,
@@ -154,6 +155,7 @@ foreach ($files as $index => $file) {
     $item['rotation_degrees'] = $processResult['rotation_degrees'];
     $item['flip_horizontal'] = $processResult['flip_horizontal'];
     $item['flip_vertical'] = $processResult['flip_vertical'];
+    $item['processed_version'] = bin2hex(random_bytes(8));
     $item['status'] = 'success';
     $metadata['items'][] = $item;
 }

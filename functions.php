@@ -816,6 +816,29 @@ function absolutePathFromBase(string $relativePath): ?string
     return $resolvedPath;
 }
 
+function versionedPublicPath(string $relativePath, ?string $version = null): string
+{
+    $relativePath = trim($relativePath);
+    if ($relativePath === '') {
+        return '';
+    }
+
+    $version = trim((string) $version);
+    if ($version === '') {
+        $absolutePath = absolutePathFromBase($relativePath);
+        if ($absolutePath !== null && is_file($absolutePath)) {
+            $version = (string) filemtime($absolutePath);
+        }
+    }
+
+    if ($version === '') {
+        return $relativePath;
+    }
+
+    $separator = strpos($relativePath, '?') === false ? '?' : '&';
+    return $relativePath . $separator . 'v=' . rawurlencode($version);
+}
+
 function buildAttachmentDisposition(string $downloadName): string
 {
     return 'attachment; filename="' . addcslashes(asciiFallbackFilename($downloadName), '"\\') . '"; filename*=UTF-8\'\'' . rawurlencode($downloadName);

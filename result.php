@@ -147,6 +147,8 @@ $zipFolderName = $metadata !== null ? sanitizeFilename((string) ($metadata['save
                     $cardNumber = $index + 1;
                     $imageId = (string) ($item['image_id'] ?? '');
                     $defaultFilename = (string) ($item['default_filename'] ?? sprintf('floorplan_%03d', $cardNumber));
+                    $processedPath = (string) ($item['processed_path'] ?? '');
+                    $previewPath = versionedPublicPath($processedPath, (string) ($item['processed_version'] ?? ''));
                     ?>
                     <article
                         class="result-card"
@@ -170,10 +172,10 @@ $zipFolderName = $metadata !== null ? sanitizeFilename((string) ($metadata['save
                         </div>
 
                         <?php if ($isSuccess): ?>
-                            <a class="preview-link" href="<?= h((string) $item['processed_path']) ?>" target="_blank" rel="noopener">
+                            <a class="preview-link" href="<?= h($previewPath) ?>" target="_blank" rel="noopener">
                                 <img
                                     class="preview-image"
-                                    src="<?= h((string) $item['processed_path']) ?>"
+                                    src="<?= h($previewPath) ?>"
                                     alt="<?= h('加工済み画像: ' . (string) $item['original_name']) ?>"
                                 >
                             </a>

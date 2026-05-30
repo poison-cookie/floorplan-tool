@@ -162,16 +162,16 @@ if ($directoryError !== null) {
                     <?php endif; ?>
                     <div class="radio-row<?= $isAppendMode ? ' radio-row-disabled' : '' ?>" role="radiogroup" aria-label="出力形式">
                         <label>
-                            <input type="radio" name="output_format" value="png" <?= $selectedOutputFormat === 'png' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>>
-                            PNG
+                            <input type="radio" name="output_format" value="gif" <?= $selectedOutputFormat === 'gif' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>>
+                            GIF
                         </label>
                         <label>
                             <input type="radio" name="output_format" value="jpg" <?= $selectedOutputFormat === 'jpg' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>>
                             JPG
                         </label>
                         <label>
-                            <input type="radio" name="output_format" value="gif" <?= $selectedOutputFormat === 'gif' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>>
-                            GIF
+                            <input type="radio" name="output_format" value="png" <?= $selectedOutputFormat === 'png' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>>
+                            PNG
                         </label>
                     </div>
                 </fieldset>
@@ -222,7 +222,7 @@ if ($directoryError !== null) {
                 <li>一度に最大<?= h((string) MAX_UPLOAD_FILES) ?>枚まで処理できます。</li>
                 <li>1ファイルあたり<?= h((string) (MAX_FILE_SIZE / 1024 / 1024)) ?>MBまでアップロードできます。</li>
                 <li>範囲スクリーンショットは保存せず、そのまま貼り付けできます。</li>
-                <li>出力形式は gif / png / jpg から選択できます。</li>
+                <li>出力形式は gif / jpg / png から選択できます。</li>
             </ul>
         </aside>
     </main>

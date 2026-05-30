@@ -58,17 +58,18 @@
             "resized_width": 538,
             "resized_height": 550,
             "position_offset_x": 0,
-            "position_offset_y": -10,
+            "position_offset_y": 0,
             "status": "success",
             "error": null,
             "error_message": null,
             "transform_scale_percent": 110,
             "rotation_degrees": 0,
             "flip_horizontal": false,
-            "flip_vertical": false
+            "flip_vertical": false,
+            "processed_version": "61ee4c54aca8c1ae"
         }
     ],
-    "updated_at": "2026-05-30 17:22:54",
+    "updated_at": "2026-05-31 01:04:15",
     "is_saved": true,
     "saved_name": "鬼滅の刃",
     "saved_at": "2026-05-30 16:48:19"

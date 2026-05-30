@@ -43,6 +43,7 @@ if ($stagedFiles === null) {
 }
 
 array_splice($metadata['items'], $itemIndex, 1);
+$metadata['updated_at'] = date('Y-m-d H:i:s');
 
 if (!saveMetadata($batchId, $metadata)) {
     rollbackStagedDeletes($stagedFiles);
