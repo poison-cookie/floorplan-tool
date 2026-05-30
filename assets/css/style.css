@@ -623,7 +623,7 @@ input[type="text"] {
 }
 
 .meta-list {
-  display: grid;
+  display: none;
   gap: 6px;
   margin: 0;
   font-size: 0.93rem;
