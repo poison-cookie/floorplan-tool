@@ -2,6 +2,7 @@
 /uploads/processed/*
 /uploads/zip/*
 /tmp/batches/*
+/tmp/sessions/*
 /data/saved_batches/*
 /.playwright-mcp/
 

@@ -32,6 +32,27 @@
     });
     let previewObjectUrls = [];
 
+    const presetSelect = uploadForm.querySelector('[data-preset-select]');
+    if (presetSelect) {
+      presetSelect.addEventListener('change', function () {
+        const option = presetSelect.selectedOptions && presetSelect.selectedOptions[0];
+        if (!option || option.value === 'custom') {
+          return;
+        }
+
+        setFormValue(uploadForm, 'output_width', option.dataset.width);
+        setFormValue(uploadForm, 'output_height', option.dataset.height);
+        setFormValue(uploadForm, 'resize_mode', option.dataset.mode);
+        setFormValue(uploadForm, 'background_color', option.dataset.bg);
+        setCheckboxValue(uploadForm, 'background_transparent', option.dataset.transparent === '1');
+
+        const formatInput = uploadForm.querySelector('input[name="output_format"][value="' + option.dataset.format + '"]');
+        if (formatInput && !formatInput.disabled) {
+          formatInput.checked = true;
+        }
+      });
+    }
+
     const updateSelectedFiles = function () {
       const files = selectedFiles;
       const invalidFiles = files.filter(function (file) {
@@ -655,6 +676,20 @@
     }
   }
 
+  function setFormValue(form, name, value) {
+    const field = form.querySelector('[name="' + name + '"]');
+    if (field && value !== undefined) {
+      field.value = value;
+    }
+  }
+
+  function setCheckboxValue(form, name, checked) {
+    const field = form.querySelector('input[type="checkbox"][name="' + name + '"]');
+    if (field) {
+      field.checked = checked;
+    }
+  }
+
   document.querySelectorAll('.filename-input').forEach(function (input) {
     input.addEventListener('input', function () {
       const sanitized = sanitizeFilename(input.value);
@@ -1036,7 +1071,7 @@
       createOffsetSpan('scale-percent', String(scalePercent)),
       document.createTextNode('% / 回転: '),
       createOffsetSpan('rotation-degrees', String(rotationDegrees)),
-      document.createTextNode('° / 左右反転: '),
+      document.createTextNode('度 / 左右反転: '),
       createOffsetSpan('flip-horizontal', flipHorizontal ? 'ON' : 'OFF'),
       document.createTextNode(' / 上下反転: '),
       createOffsetSpan('flip-vertical', flipVertical ? 'ON' : 'OFF')

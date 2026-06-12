@@ -6,6 +6,12 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
 function startSessionIfNeeded(): void
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
+        if (!is_dir(SESSION_DIR)) {
+            @mkdir(SESSION_DIR, 0775, true);
+        }
+        if (is_dir(SESSION_DIR) && is_writable(SESSION_DIR)) {
+            session_save_path(SESSION_DIR);
+        }
         session_start();
     }
 }
@@ -16,6 +22,7 @@ function ensureDirectories(): void
         UPLOAD_ORIGINAL_DIR,
         UPLOAD_PROCESSED_DIR,
         UPLOAD_ZIP_DIR,
+        SESSION_DIR,
         BATCH_DIR,
         DATA_DIR,
         SAVED_BATCH_DIR,
@@ -86,6 +93,71 @@ function normalizeOutputFormat(?string $format): string
     }
 
     return $format;
+}
+
+function normalizeProcessingOptions(array $input = [], ?array $fallback = null): array
+{
+    $fallback = is_array($fallback) ? $fallback : [];
+    $presetKey = (string) ($input['preset'] ?? $fallback['preset'] ?? 'floorplan_square');
+    $preset = PROCESSING_PRESETS[$presetKey] ?? PROCESSING_PRESETS['floorplan_square'];
+
+    $options = array_merge($preset, $fallback, $input);
+    $width = clampInt((int) ($options['output_width'] ?? DEFAULT_OUTPUT_WIDTH), MIN_OUTPUT_DIMENSION, MAX_OUTPUT_DIMENSION);
+    $height = clampInt((int) ($options['output_height'] ?? DEFAULT_OUTPUT_HEIGHT), MIN_OUTPUT_DIMENSION, MAX_OUTPUT_DIMENSION);
+    $resizeMode = strtolower((string) ($options['resize_mode'] ?? DEFAULT_RESIZE_MODE));
+    if (!in_array($resizeMode, ALLOWED_RESIZE_MODES, true)) {
+        $resizeMode = DEFAULT_RESIZE_MODE;
+    }
+
+    $backgroundColor = normalizeHexColor((string) ($options['background_color'] ?? DEFAULT_BACKGROUND_COLOR));
+    $transparent = filter_var($options['background_transparent'] ?? DEFAULT_BACKGROUND_TRANSPARENT, FILTER_VALIDATE_BOOLEAN);
+
+    return [
+        'preset' => isset(PROCESSING_PRESETS[$presetKey]) ? $presetKey : 'custom',
+        'output_width' => $width,
+        'output_height' => $height,
+        'resize_mode' => $resizeMode,
+        'background_color' => $backgroundColor,
+        'background_transparent' => $transparent,
+    ];
+}
+
+function normalizeHexColor(string $color): string
+{
+    $color = trim($color);
+    if (preg_match('/^#?[0-9a-fA-F]{6}$/', $color) !== 1) {
+        return DEFAULT_BACKGROUND_COLOR;
+    }
+
+    return '#' . strtolower(ltrim($color, '#'));
+}
+
+function resizeModeLabel(string $mode): string
+{
+    switch ($mode) {
+        case 'contain':
+            return '全体を収める';
+        case 'cover':
+            return '余白なしで切り抜く';
+        case 'stretch':
+            return '指定サイズに引き伸ばす';
+        case 'width':
+            return '幅基準';
+        case 'height':
+            return '高さ基準';
+        default:
+            return $mode;
+    }
+}
+
+function hexColorToRgb(string $color): array
+{
+    $color = ltrim(normalizeHexColor($color), '#');
+    return [
+        hexdec(substr($color, 0, 2)),
+        hexdec(substr($color, 2, 2)),
+        hexdec(substr($color, 4, 2)),
+    ];
 }
 
 function getMimeTypeForOutputFormat(string $format): string
@@ -307,9 +379,41 @@ function processImageToSquare(
     int $scalePercent = 100,
     int $rotationDegrees = 0,
     bool $flipHorizontal = false,
-    bool $flipVertical = false
+    bool $flipVertical = false,
+    ?array $processingOptions = null
 ): array
 {
+    $options = normalizeProcessingOptions($processingOptions ?? []);
+    return processImageWithOptions(
+        $sourcePath,
+        $destPath,
+        $inputExtension,
+        $outputFormat,
+        $offsetX,
+        $offsetY,
+        $scalePercent,
+        $rotationDegrees,
+        $flipHorizontal,
+        $flipVertical,
+        $options
+    );
+}
+
+function processImageWithOptions(
+    string $sourcePath,
+    string $destPath,
+    string $inputExtension,
+    string $outputFormat,
+    int $offsetX,
+    int $offsetY,
+    int $scalePercent,
+    int $rotationDegrees,
+    bool $flipHorizontal,
+    bool $flipVertical,
+    array $processingOptions
+): array
+{
+    $processingOptions = normalizeProcessingOptions($processingOptions);
     $result = [
         'success' => false,
         'source_width' => null,
@@ -322,11 +426,14 @@ function processImageToSquare(
         'rotation_degrees' => 0,
         'flip_horizontal' => false,
         'flip_vertical' => false,
+        'output_width' => $processingOptions['output_width'],
+        'output_height' => $processingOptions['output_height'],
+        'resize_mode' => $processingOptions['resize_mode'],
         'error' => null,
     ];
 
     if (!extension_loaded('gd')) {
-        $result['error'] = 'GD拡張が有効ではありません。';
+        $result['error'] = 'The GD extension is not enabled.';
         return $result;
     }
 
@@ -340,7 +447,7 @@ function processImageToSquare(
     $sourceHeight = imagesy($sourceImage);
     $scalePercent = clampInt($scalePercent, 20, 300);
     $rotationDegrees = normalizeRotationDegrees($rotationDegrees);
-    $workingImage = transformImageResource($sourceImage, $rotationDegrees, $flipHorizontal, $flipVertical);
+    $workingImage = transformImageResource($sourceImage, $rotationDegrees, $flipHorizontal, $flipVertical, $processingOptions);
     if ($workingImage === false) {
         imagedestroy($sourceImage);
         $result['error'] = 'E_PROCESS_FAILED';
@@ -349,9 +456,10 @@ function processImageToSquare(
 
     $workingWidth = imagesx($workingImage);
     $workingHeight = imagesy($workingImage);
-    $longSide = max($workingWidth, $workingHeight);
+    $outputWidth = (int) $processingOptions['output_width'];
+    $outputHeight = (int) $processingOptions['output_height'];
 
-    if ($longSide <= 0) {
+    if ($workingWidth <= 0 || $workingHeight <= 0 || $outputWidth <= 0 || $outputHeight <= 0) {
         if ($workingImage !== $sourceImage) {
             imagedestroy($workingImage);
         }
@@ -360,15 +468,23 @@ function processImageToSquare(
         return $result;
     }
 
-    $scale = (OUTPUT_SIZE / $longSide) * ($scalePercent / 100);
-    $resizedWidth = max(1, (int) round($workingWidth * $scale));
-    $resizedHeight = max(1, (int) round($workingHeight * $scale));
-    $centerX = (int) floor((OUTPUT_SIZE - $resizedWidth) / 2);
-    $centerY = (int) floor((OUTPUT_SIZE - $resizedHeight) / 2);
-    $dstX = clampCanvasPosition($centerX + $offsetX, $resizedWidth);
-    $dstY = clampCanvasPosition($centerY + $offsetY, $resizedHeight);
+    if ((string) $processingOptions['resize_mode'] === 'stretch') {
+        $scaleX = ($outputWidth / $workingWidth) * ($scalePercent / 100);
+        $scaleY = ($outputHeight / $workingHeight) * ($scalePercent / 100);
+        $resizedWidth = max(1, (int) round($workingWidth * $scaleX));
+        $resizedHeight = max(1, (int) round($workingHeight * $scaleY));
+    } else {
+        $baseScale = imageBaseScale($workingWidth, $workingHeight, $outputWidth, $outputHeight, (string) $processingOptions['resize_mode']);
+        $scale = $baseScale * ($scalePercent / 100);
+        $resizedWidth = max(1, (int) round($workingWidth * $scale));
+        $resizedHeight = max(1, (int) round($workingHeight * $scale));
+    }
+    $centerX = (int) floor(($outputWidth - $resizedWidth) / 2);
+    $centerY = (int) floor(($outputHeight - $resizedHeight) / 2);
+    $dstX = clampCanvasPosition($centerX + $offsetX, $resizedWidth, $outputWidth);
+    $dstY = clampCanvasPosition($centerY + $offsetY, $resizedHeight, $outputHeight);
 
-    $canvas = imagecreatetruecolor(OUTPUT_SIZE, OUTPUT_SIZE);
+    $canvas = imagecreatetruecolor($outputWidth, $outputHeight);
     if ($canvas === false) {
         if ($workingImage !== $sourceImage) {
             imagedestroy($workingImage);
@@ -378,8 +494,7 @@ function processImageToSquare(
         return $result;
     }
 
-    $background = imagecolorallocate($canvas, BACKGROUND_R, BACKGROUND_G, BACKGROUND_B);
-    imagefill($canvas, 0, 0, $background);
+    fillCanvasBackground($canvas, $outputFormat, $processingOptions);
 
     $copied = imagecopyresampled(
         $canvas,
@@ -439,17 +554,65 @@ function processImageToSquare(
     $result['rotation_degrees'] = $rotationDegrees;
     $result['flip_horizontal'] = $flipHorizontal;
     $result['flip_vertical'] = $flipVertical;
+    $result['output_width'] = $outputWidth;
+    $result['output_height'] = $outputHeight;
+    $result['resize_mode'] = $processingOptions['resize_mode'];
 
     return $result;
 }
 
-function transformImageResource($sourceImage, int $rotationDegrees, bool $flipHorizontal, bool $flipVertical)
+function imageBaseScale(int $sourceWidth, int $sourceHeight, int $outputWidth, int $outputHeight, string $resizeMode): float
+{
+    $scaleX = $outputWidth / $sourceWidth;
+    $scaleY = $outputHeight / $sourceHeight;
+
+    switch ($resizeMode) {
+        case 'cover':
+            return max($scaleX, $scaleY);
+        case 'stretch':
+            return min($scaleX, $scaleY);
+        case 'width':
+            return $scaleX;
+        case 'height':
+            return $scaleY;
+        case 'contain':
+        default:
+            return min($scaleX, $scaleY);
+    }
+}
+
+function fillCanvasBackground($canvas, string $outputFormat, array $processingOptions): void
+{
+    $transparent = !empty($processingOptions['background_transparent']) && normalizeOutputFormat($outputFormat) === 'png';
+    if ($transparent) {
+        imagealphablending($canvas, false);
+        imagesavealpha($canvas, true);
+        $background = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
+        imagefill($canvas, 0, 0, $background);
+        imagealphablending($canvas, true);
+        return;
+    }
+
+    [$r, $g, $b] = hexColorToRgb((string) ($processingOptions['background_color'] ?? DEFAULT_BACKGROUND_COLOR));
+    $background = imagecolorallocate($canvas, $r, $g, $b);
+    imagefill($canvas, 0, 0, $background);
+}
+
+function transformImageResource($sourceImage, int $rotationDegrees, bool $flipHorizontal, bool $flipVertical, ?array $processingOptions = null)
 {
     $workingImage = $sourceImage;
     $rotationDegrees = normalizeRotationDegrees($rotationDegrees);
+    $processingOptions = normalizeProcessingOptions($processingOptions ?? []);
 
     if ($rotationDegrees !== 0) {
-        $background = imagecolorallocate($workingImage, BACKGROUND_R, BACKGROUND_G, BACKGROUND_B);
+        if (!empty($processingOptions['background_transparent'])) {
+            imagealphablending($workingImage, false);
+            imagesavealpha($workingImage, true);
+            $background = imagecolorallocatealpha($workingImage, 0, 0, 0, 127);
+        } else {
+            [$r, $g, $b] = hexColorToRgb((string) $processingOptions['background_color']);
+            $background = imagecolorallocate($workingImage, $r, $g, $b);
+        }
         $rotationAngle = (360 - $rotationDegrees) % 360;
         $rotatedImage = imagerotate($workingImage, $rotationAngle, $background);
         if ($rotatedImage === false) {
@@ -498,10 +661,11 @@ function clampInt(int $value, int $min, int $max): int
     return min(max($value, $min), $max);
 }
 
-function clampCanvasPosition(int $position, int $imageLength): int
+function clampCanvasPosition(int $position, int $imageLength, ?int $canvasLength = null): int
 {
     $visibleLength = min(10, max(1, $imageLength));
-    return clampInt($position, -($imageLength - $visibleLength), OUTPUT_SIZE - $visibleLength);
+    $canvasLength = $canvasLength ?? OUTPUT_SIZE;
+    return clampInt($position, -($imageLength - $visibleLength), $canvasLength - $visibleLength);
 }
 
 function saveImageResource($image, string $destPath, string $outputFormat): bool

@@ -27,6 +27,14 @@ try {
 }
 
 $outputFormat = normalizeOutputFormat($_POST['output_format'] ?? DEFAULT_OUTPUT_FORMAT);
+$postedProcessingOptions = normalizeProcessingOptions([
+    'preset' => $_POST['processing_preset'] ?? 'custom',
+    'output_width' => $_POST['output_width'] ?? DEFAULT_OUTPUT_WIDTH,
+    'output_height' => $_POST['output_height'] ?? DEFAULT_OUTPUT_HEIGHT,
+    'resize_mode' => $_POST['resize_mode'] ?? DEFAULT_RESIZE_MODE,
+    'background_color' => $_POST['background_color'] ?? DEFAULT_BACKGROUND_COLOR,
+    'background_transparent' => isset($_POST['background_transparent']),
+]);
 $files = normalizeFilesArray($_FILES['images'] ?? []);
 $postedFilenames = $_POST['upload_filenames'] ?? [];
 if (!is_array($postedFilenames)) {
@@ -36,6 +44,7 @@ $appendBatchId = (string) ($_POST['append_batch_id'] ?? '');
 $appendMetadata = isValidBatchId($appendBatchId) ? loadMetadata($appendBatchId) : null;
 if ($appendMetadata !== null) {
     $outputFormat = normalizeOutputFormat($appendMetadata['output_format'] ?? DEFAULT_OUTPUT_FORMAT);
+    $postedProcessingOptions = normalizeProcessingOptions($appendMetadata['processing_options'] ?? [], $appendMetadata['processing_options'] ?? null);
 }
 
 if (count($files) === 0) {
@@ -65,14 +74,21 @@ $metadata = $appendMetadata ?? [
     'batch_id' => $batchId,
     'created_at' => date('Y-m-d H:i:s'),
     'output_format' => $outputFormat,
-    'output_size' => OUTPUT_SIZE,
+    'output_size' => $postedProcessingOptions['output_width'],
+    'output_width' => $postedProcessingOptions['output_width'],
+    'output_height' => $postedProcessingOptions['output_height'],
+    'processing_options' => $postedProcessingOptions,
     'items' => [],
 ];
 $metadata['items'] = is_array($metadata['items'] ?? null) ? $metadata['items'] : [];
 $metadata['output_format'] = normalizeOutputFormat($metadata['output_format'] ?? $outputFormat);
-$metadata['output_size'] = OUTPUT_SIZE;
+$metadata['processing_options'] = normalizeProcessingOptions($metadata['processing_options'] ?? $postedProcessingOptions, $postedProcessingOptions);
+$metadata['output_width'] = $metadata['processing_options']['output_width'];
+$metadata['output_height'] = $metadata['processing_options']['output_height'];
+$metadata['output_size'] = $metadata['output_width'];
 $metadata['updated_at'] = date('Y-m-d H:i:s');
 $outputFormat = (string) $metadata['output_format'];
+$processingOptions = $metadata['processing_options'];
 $nextImageNumber = nextImageNumber($metadata['items']);
 
 foreach ($files as $index => $file) {
@@ -130,7 +146,7 @@ foreach ($files as $index => $file) {
         continue;
     }
 
-    $processResult = processImageToSquare($originalPath, $processedPath, $inputExtension, $outputFormat);
+    $processResult = processImageToSquare($originalPath, $processedPath, $inputExtension, $outputFormat, 0, 0, 100, 0, false, false, $processingOptions);
     if (!$processResult['success']) {
         $item['original_path'] = relativePathFromBase($originalPath);
         $item['mime_type'] = $validation['mime_type'];

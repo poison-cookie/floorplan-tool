@@ -134,7 +134,10 @@ legend,
 }
 
 input[type="file"],
-input[type="text"] {
+input[type="text"],
+input[type="number"],
+input[type="color"],
+select {
   width: 100%;
   border: 1px solid #c7ced7;
   border-radius: 6px;
@@ -147,9 +150,16 @@ input[type="file"] {
   padding: 10px;
 }
 
-input[type="text"] {
+input[type="text"],
+input[type="number"],
+select {
   min-width: 0;
   padding: 9px 10px;
+}
+
+input[type="color"] {
+  min-height: 42px;
+  padding: 4px;
 }
 
 .helper-text,
@@ -216,6 +226,34 @@ input[type="text"] {
   color: #0f5f70;
   padding: 10px 12px;
   font-weight: 700;
+}
+
+.settings-grid-inner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.settings-grid-inner label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+.checkbox-label {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  align-self: end;
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.checkbox-label input {
+  width: auto;
+}
+
+.settings-disabled {
+  opacity: 0.68;
 }
 
 .saved-batches {

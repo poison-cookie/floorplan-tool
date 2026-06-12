@@ -101,6 +101,7 @@ switch ($action) {
 
 $inputExtension = strtolower(pathinfo($originalPath, PATHINFO_EXTENSION));
 $outputFormat = normalizeOutputFormat($metadata['output_format'] ?? DEFAULT_OUTPUT_FORMAT);
+$processingOptions = normalizeProcessingOptions($metadata['processing_options'] ?? []);
 $processResult = processImageToSquare(
     $originalPath,
     $processedPath,
@@ -111,7 +112,8 @@ $processResult = processImageToSquare(
     $scalePercent,
     $rotationDegrees,
     $flipHorizontal,
-    $flipVertical
+    $flipVertical,
+    $processingOptions
 );
 
 if (!$processResult['success']) {

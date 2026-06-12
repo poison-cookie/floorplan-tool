@@ -27,7 +27,7 @@ if ($metadata === null) {
 
 $item = findItemByImageId($metadata, $imageId);
 if ($item === null || ($item['status'] ?? '') !== 'success') {
-    failDownload('ダウンロードできる加工済み画像が見つかりません。', 404);
+    failDownload('ダウンロードできる加工済み画像がありません。', 404);
 }
 
 $processedPath = absolutePathFromBase((string) ($item['processed_path'] ?? ''));
