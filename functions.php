@@ -167,6 +167,8 @@ function getMimeTypeForOutputFormat(string $format): string
             return 'image/gif';
         case 'jpg':
             return 'image/jpeg';
+        case 'webp':
+            return 'image/webp';
         case 'png':
         default:
             return 'image/png';
@@ -675,6 +677,8 @@ function saveImageResource($image, string $destPath, string $outputFormat): bool
             return imagegif($image, $destPath);
         case 'jpg':
             return imagejpeg($image, $destPath, 90);
+        case 'webp':
+            return function_exists('imagewebp') && imagewebp($image, $destPath, 85);
         case 'png':
         default:
             return imagepng($image, $destPath, 6);

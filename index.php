@@ -167,6 +167,7 @@ if ($directoryError !== null) {
                         <label><input type="radio" name="output_format" value="gif" <?= $selectedOutputFormat === 'gif' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>> GIF</label>
                         <label><input type="radio" name="output_format" value="jpg" <?= $selectedOutputFormat === 'jpg' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>> JPG</label>
                         <label><input type="radio" name="output_format" value="png" <?= $selectedOutputFormat === 'png' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>> PNG</label>
+                        <label><input type="radio" name="output_format" value="webp" <?= $selectedOutputFormat === 'webp' ? 'checked' : '' ?> <?= $isAppendMode ? 'disabled' : '' ?>> WEBP</label>
                     </div>
                 </fieldset>
 

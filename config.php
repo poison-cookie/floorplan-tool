@@ -32,7 +32,7 @@ define('MAX_FILE_SIZE', 10 * 1024 * 1024);
 
 define('DEFAULT_OUTPUT_FORMAT', 'png');
 define('ALLOWED_INPUT_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif']);
-define('ALLOWED_OUTPUT_FORMATS', ['gif', 'png', 'jpg']);
+define('ALLOWED_OUTPUT_FORMATS', ['gif', 'png', 'jpg', 'webp']);
 define('ALLOWED_MIME_TYPES', ['image/jpeg', 'image/png', 'image/gif']);
 define('ALLOWED_RESIZE_MODES', ['contain', 'cover', 'stretch', 'width', 'height']);
 define('PROCESSING_PRESETS', [
