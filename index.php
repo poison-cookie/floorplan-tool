@@ -57,12 +57,13 @@ if ($directoryError !== null) {
             <p class="lead">
                 画像をアップロードし、プリセットまたは任意の加工設定を適用して、個別ファイルまたはZIPでダウンロードできます。
             </p>
-            <?php if ($isAppendMode): ?>
-                <div class="actions">
+            <div class="actions">
+                <a class="button button-secondary" href="manual.php">マニュアルを見る</a>
+                <?php if ($isAppendMode): ?>
                     <a class="button button-secondary" href="result.php?batch=<?= h(rawurlencode($appendBatchId)) ?>">加工結果へ戻る</a>
                     <a class="button button-secondary" href="index.php">新しいバッチを作成</a>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </header>
 
         <?php if (!empty($errors)): ?>
